@@ -50,11 +50,11 @@ class MultiAgentEnv(gym.Env):
             if agent.movable:
                 total_action_space.append(u_action_space)
             # communication action space
-            if self.discrete_action_space:
-                c_action_space = spaces.Discrete(world.dim_c)
-            else:
-                c_action_space = spaces.Box(low=0.0, high=1.0, shape=(world.dim_c,), dtype=np.float32)
             if not agent.silent:
+                if self.discrete_action_space:
+                    c_action_space = spaces.Discrete(world.dim_c)
+                else:
+                    c_action_space = spaces.Box(low=0.0, high=1.0, shape=(world.dim_c,), dtype=np.float32)
                 total_action_space.append(c_action_space)
             # total action space
             if len(total_action_space) > 1:
@@ -91,7 +91,7 @@ class MultiAgentEnv(gym.Env):
         one_hot_actions = []
         for act, acsp in zip(action_n, self.action_space):
             one_hot = np.zeros(acsp.n)
-            one_hot[act] = 1.0
+            one_hot[act.astype(int)] = 1.0
             one_hot_actions.append(one_hot)
         action_n = one_hot_actions
 
