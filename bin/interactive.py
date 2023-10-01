@@ -36,9 +36,8 @@ if __name__ == '__main__':
         for i, policy in enumerate(policies):
             act_n.append(policy.action(obs_n[i]))
         # step environment
-        obs_n, reward_n, done_n, _ = env.step(act_n)
-        done = sum(done_n) ==  len(policies)
-        print(done_n, sum(done_n), len(policies))
+        obs_n, reward_n, done_n, _, _ = env.step(act_n)
+        print(obs_n, reward_n)
         # render all agent views
         env.render()
         sleep(0.1)

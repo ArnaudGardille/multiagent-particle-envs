@@ -87,11 +87,10 @@ class MultiAgentEnv(gym.Env):
         self.world.seed(seed)
 
     def step(self, action_n):
-
         one_hot_actions = []
         for act, acsp in zip(action_n, self.action_space):
             one_hot = np.zeros(acsp.n)
-            one_hot[act.astype(int)] = 1.0
+            one_hot[np.array(act).astype(int)] = 1.0
             one_hot_actions.append(one_hot)
         action_n = one_hot_actions
 
@@ -118,9 +117,11 @@ class MultiAgentEnv(gym.Env):
         if self.shared_reward:
             reward_n = [reward] * self.n
 
-        return tuple(obs_n), reward_n, done_n, info_n
+        info_n['avail_actions']=[np.ones(a_space.n) for a_space in self.action_space]
 
-    def reset(self):
+        return tuple(obs_n), reward_n, done_n, done_n, info_n
+
+    def reset(self, return_info=False):
         # reset world
         self.reset_callback(self.world)
         # reset renderer
@@ -130,6 +131,8 @@ class MultiAgentEnv(gym.Env):
         self.agents = self.world.policy_agents
         for agent in self.agents:
             obs_n.append(self._get_obs(agent))
+        if return_info:
+            return tuple(obs_n), {'avail_actions':[np.ones(a_space.n) for a_space in self.action_space]}
         return tuple(obs_n)
 
     # get info used for benchmarking
@@ -339,19 +342,27 @@ class BatchMultiAgentEnv(gym.Env):
         info_n = {'n': []}
         i = 0
         for env in self.env_batch:
-            obs, reward, done, _ = env.step(action_n[i:(i+env.n)], time)
+            obs, reward, done, _, _ = env.step(action_n[i:(i+env.n)], time)
             i += env.n
             obs_n += obs
             # reward = [r / len(self.env_batch) for r in reward]
             reward_n += reward
             done_n += done
-        return obs_n, reward_n, done_n, info_n
+        return obs_n, reward_n, done_n, done_n, info_n
 
-    def reset(self):
+    def reset(self, return_info=False):
         obs_n = []
+        info_n = []
         for env in self.env_batch:
-            obs_n += env.reset()
-        return obs_n
+            if return_info:
+                obs, info = env.reset(return_info)
+                obs_n += obs
+                info_n += info
+            else:
+                obs_n += env.reset()
+        if return_info:
+            return tuple(obs_n), tuple(info_n) 
+        return tuple(obs_n)
 
     # render environment
     def render(self, mode='human', close=True):
